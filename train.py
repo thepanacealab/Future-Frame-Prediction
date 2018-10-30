@@ -3,12 +3,19 @@ import glob
 import cv2
 import numpy as np
 import h5py
-
-
 import tensorflow as tf
-#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
-#sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options))
-sess = tf.InteractiveSession()
+import re
+
+
+
+
+numbers = re.compile(r'(\d+)')
+def numericalSort(value):
+    parts = numbers.split(value)
+    parts[1::2] = map(int, parts[1::2])
+    return parts
+
+
 
 def CV_to_NN(x):
     return np.array( x / 255.0, dtype=np.float32) 
@@ -24,10 +31,10 @@ train_img_y_path = 'walking/nobg/train_y/*.jpg'
 test_img_x1_path = 'walking/nobg/test_x1/*.jpg'
 test_img_y_path = 'walking/nobg/test_y/*.jpg'
 
-train_x1_addrs = glob.glob(train_img_x1_path)
-train_y_addrs = glob.glob(train_img_y_path)
-test_x1_addrs = glob.glob(test_img_x1_path)
-test_y_addrs = glob.glob(test_img_y_path)
+train_x1_addrs = sorted(glob.glob(train_img_x1_path), key=numericalSort)
+train_y_addrs = sorted(glob.glob(train_img_y_path), key=numericalSort)
+test_x1_addrs = sorted(glob.glob(test_img_x1_path), key=numericalSort)
+test_y_addrs = sorted(glob.glob(test_img_y_path), key=numericalSort)
 
 train_X1 = train_x1_addrs[0:int(len(train_x1_addrs))]
 train_Y = train_y_addrs[0:int(len(train_y_addrs))]
@@ -357,6 +364,10 @@ accuracy = tf.nn.l2_loss(input_Y - h_conv8)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
+#sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options))
+sess = tf.InteractiveSession()
 sess.run(tf.initialize_all_variables())
 for i in range(1000000):
     X, x2, Y = next(data_iter)

@@ -1,0 +1,6 @@
+data/
+train/
+model/GAN/
+model/autoencoder/v1/
+model/autoencoder/vae/
+model/autoencoder/l2_ch/checkpoints/

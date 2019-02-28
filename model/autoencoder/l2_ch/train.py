@@ -547,7 +547,7 @@ def save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, valida
     csvFile.close()
     
 def save_mini_batch_train_loss_as_csv(mini_batch_train_loss, name):
-    data = [[mini_batch_train_loss]]
+    data = zip(mini_batch_train_loss)
     file_name = str(name)+'.csv'
     save_dir = 'csv'
     if not os.path.exists(save_dir):

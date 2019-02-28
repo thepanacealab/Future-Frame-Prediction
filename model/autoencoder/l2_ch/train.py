@@ -315,7 +315,7 @@ train_loss = []
 validation_loss = []
 train_time = []
 validation_time = []
-
+mini_batch_train_loss = []
 
 def calculate_test_loss():
     total_batch = int(test_X1.shape[0] / batch_size)
@@ -374,7 +374,7 @@ def calculate_validation_loss():
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
         _, c = sess.run([optimizer, l2_loss], feed_dict=feed_dict_validation)
-            
+        
         # Compute average loss
         avg_cost += c / total_batch
         
@@ -407,6 +407,7 @@ def optimize(epoch):
     global last_improvement
     global epoch_list
     global train_loss
+    global mini_batch_train_loss
     global validation_loss
     global train_time
     
@@ -441,12 +442,15 @@ def optimize(epoch):
             # to the placeholder variables and then runs the optimizer.
             _, c = sess.run([optimizer, l2_loss], feed_dict=feed_dict_train)
             
+            #save mini-batch loss c to list
+            mini_batch_train_loss.append(c)
+            
             # Compute average loss
             avg_cost += c / total_batch
             print(avg_cost)
             
-            if iteration % display_freq == 0 or iteration == 1:
-                print("step {0:5d}:\t Mini-Batch Loss={1:.6f}".format(iteration, c))
+            if iteration % display_freq == 0:
+                print("Epoch {:6d}:\t step {0:5d}:\t Mini-Batch Loss={1:.6f}".format(i, iteration, c))
         
         epoch_end_time = time.time() 
         epoch_time_dif = epoch_end_time - start_time
@@ -461,10 +465,10 @@ def optimize(epoch):
         
         
 
-        # If validation accuracy is an improvement over best-known.
+        # If validation loss is an improvement over best-known.
         if loss_validation < best_validation_loss:
             
-            # Update the best-known validation accuracy.
+            # Update the best-known validation loss.
             best_validation_loss = loss_validation
                 
             # Set the iteration for the last improvement to current.
@@ -483,7 +487,7 @@ def optimize(epoch):
         # Status-message for printing.
         msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Validation Loss: {2:.6f} {3}"
         
-            # Print it.
+        # Print it.
         print(msg.format(i + 1, avg_cost, loss_validation, improved_str))
         
         epoch_list.append(i)   
@@ -539,13 +543,38 @@ def save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, valida
         writer.writerows(data)
     
     csvFile.close()
+    
+def save_mini_batch_train_loss_as_csv(mini_batch_train_loss, name):
+    data = [[mini_batch_train_loss]]
+    file_name = str(name)+'.csv'
+    save_dir = 'csv'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, file_name)
+    
+    with open(save_path, 'a') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerow(['mini_batch_train_loss'])
+        writer.writerows(data)
+    
+    csvFile.close()
+    
+
+
+def save_test_loss_as_csv(test_loss):
+    data = [[test_loss]]
+    with open("output/accuracy.txt", "a") as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerow(['test loss'])
+        writer.writerows(data)
+    csvFile.close() 
 
 epoch = 3
 optimize(epoch)
 
 plot_train_loss(train_loss, validation_loss)
 save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, validation_time, 'training_data')
-
+save_mini_batch_train_loss_as_csv(mini_batch_train_loss, 'mini_batch_train_loss')
 # Running a new session
 print("Starting 2nd session...")
 
@@ -555,8 +584,9 @@ print("Model restored from file: %s" % save_path)
 
 
 test_loss = calculate_test_loss()
-
+save_test_loss_as_csv(test_loss)
 print("Test loss: {:.6f}".format(test_loss))
+   
 
 # This has been commented out in case you want to modify and experiment
 # with the Notebook without having to restart it.

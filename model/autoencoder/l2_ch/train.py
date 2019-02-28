@@ -417,6 +417,8 @@ def optimize(epoch):
     start_time = time.time()
 
     for i in range(epoch):
+        mini_batch_start_time = time.time()
+        
         avg_cost = 0
         print('Training epoch: {}'.format(i + 1))
         
@@ -447,13 +449,13 @@ def optimize(epoch):
             
             # Compute average loss
             avg_cost += c / total_batch
-            print(avg_cost)
+            #print(avg_cost)
             
             if iteration % display_freq == 0:
-                print("Epoch {:6d}:\t step {0:5d}:\t Mini-Batch Loss={1:.6f}".format(i, iteration, c))
+                print("Epoch {0:4d}\t step {1:5d}:\t Mini-Batch Loss={2:.6f}".format(i, iteration, c))
         
         epoch_end_time = time.time() 
-        epoch_time_dif = epoch_end_time - start_time
+        epoch_time_dif = epoch_end_time - mini_batch_start_time
         train_time.append(epoch_time_dif)
         train_loss.append(avg_cost)
         # Print status every 100 iterations and after last iteration.
@@ -563,7 +565,7 @@ def save_mini_batch_train_loss_as_csv(mini_batch_train_loss, name):
 
 def save_test_loss_as_csv(test_loss):
     data = [[test_loss]]
-    with open("output/accuracy.txt", "a") as csvFile:
+    with open("csv/test_loss.txt", "a") as csvFile:
         writer = csv.writer(csvFile)
         writer.writerow(['test loss'])
         writer.writerows(data)

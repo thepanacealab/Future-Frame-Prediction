@@ -61,9 +61,7 @@ def data_iterator(train_X1, train_x2, train_Y):
             yield shuf_X1[batch_idx:batch_idx+batch_size], shuf_x2[batch_idx:batch_idx+batch_size], shuf_Y[batch_idx:batch_idx+batch_size]
 
             
-train_data_iter = data_iterator(train_X1, train_x2, train_Y)
-test_data_iter = data_iterator(test_X1, test_x2, test_Y)
-validation_data_iter = data_iterator(validation_X1, validation_x2, validation_Y)
+
 #data_iter
 
 
@@ -178,11 +176,11 @@ h_conv5 = tf.nn.relu(conv2d(h_pool4, W_conv5) + b_conv5)
 h_fc0 = tf.reshape(h_conv5, [-1, 15*15*64])
 #h_fc0 = tf.reshape(h_conv5, [-1, 15*15*32])
 h_fc1 = tf.nn.relu(tf.add(tf.matmul(h_fc0, W_fc1), b_fc1))
-print(h_fc1.shape)
+#print(h_fc1.shape)
 # merge
 h_fcM = tf.concat([h_emb_fc3, h_fc1], 1)
 
-print(h_fcM.shape)
+#print(h_fcM.shape)
 
 
 
@@ -239,11 +237,11 @@ deconv_shape_conv10 = tf.stack([batch_size, 240, 240, 1])
 
 # fc decoder part
 h_fc2 = tf.nn.relu(tf.add(tf.matmul(h_fcM, W_fc2), b_fc2))
-print(h_fc2.shape)
+#print(h_fc2.shape)
 #h_fc2 = tf.nn.relu(tf.add(tf.matmul(h_fc1, W_fc2), b_fc2))
 #h_fc3 = tf.reshape(h_fc2, [-1, 15, 15, 32])
 h_fc3 = tf.reshape(h_fc2, [-1, 15, 15, 64])
-print(h_fc3.shape)
+#print(h_fc3.shape)
 
 # conv decoder part
 h_conv6 = tf.nn.relu(tf.nn.conv2d_transpose(h_fc3, W_conv6, output_shape = deconv_shape_conv6, strides=[1,1,1,1], padding='SAME') + b_conv6)
@@ -275,6 +273,8 @@ error = tf.nn.l2_loss(input_Y - h_conv10)
 optimizer = tf.train.AdamOptimizer(0.001).minimize(error)
 
 l2_loss = tf.nn.l2_loss(input_Y - h_conv10)
+
+mse = tf.losses.mean_squared_error(input_Y, h_conv10)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -310,18 +310,36 @@ require_improvement = 1000
 # Counter for total number of iterations performed so far.
 total_iterations = 0
 
+
 epoch_list = []
+epcoh_step_train_list = []
+epcoh_step_validation_list = []
 train_loss = []
+train_loss_mse = []
 validation_loss = []
+validation_loss_mse = []
 train_time = []
 validation_time = []
 mini_batch_train_loss = []
+mini_batch_train_loss_mse = []
+mini_batch_test_loss = []
+mini_batch_test_loss_mse = []
+mini_batch_validation_loss = []
+mini_batch_validation_loss_mse = []
+
+
+train_data_iter = data_iterator(train_X1, train_x2, train_Y)
+validation_data_iter = data_iterator(validation_X1, validation_x2, validation_Y)
+test_data_iter = data_iterator(test_X1, test_x2, test_Y)
 
 def calculate_test_loss():
     total_batch = int(test_X1.shape[0] / batch_size)
     # Start-time used for printing time-usage below.
     start_time = time.time()
     avg_cost = 0
+    avg_cost_mse = 0
+    
+    
     
     for iteration in range(total_batch):
         # Get a batch of training examples.
@@ -336,10 +354,15 @@ def calculate_test_loss():
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
-        _, c = sess.run([optimizer, l2_loss], feed_dict=feed_dict_test)
+        c, c_mse = sess.run([l2_loss, mse], feed_dict=feed_dict_test)
+            
+        
+        mini_batch_test_loss.append(c)
+        mini_batch_test_loss_mse.append(c_mse)
             
         # Compute average loss
         avg_cost += c / total_batch
+        avg_cost_mse += c_mse / total_batch
     
     # Ending time.
     end_time = time.time()
@@ -350,7 +373,7 @@ def calculate_test_loss():
     # Print the time-usage.
     print("Time usage in test data: " + str(timedelta(seconds=int(round(time_dif)))))
     
-    return avg_cost
+    return avg_cost, avg_cost_mse
             
             
 def calculate_validation_loss():
@@ -359,6 +382,9 @@ def calculate_validation_loss():
     # Start-time used for printing time-usage below.
     start_time = time.time()
     avg_cost = 0
+    avg_cost_mse = 0
+    
+    
     
     for iteration in range(total_batch):
         # Get a batch of training examples.
@@ -373,10 +399,14 @@ def calculate_validation_loss():
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
-        _, c = sess.run([optimizer, l2_loss], feed_dict=feed_dict_validation)
+        c, c_mse = sess.run([l2_loss, mse], feed_dict=feed_dict_validation)
+        
+        mini_batch_validation_loss.append(c)
+        mini_batch_validation_loss_mse.append(c_mse)
         
         # Compute average loss
         avg_cost += c / total_batch
+        avg_cost_mse += c_mse / total_batch
         
     # Ending time.
     end_time = time.time()
@@ -386,7 +416,7 @@ def calculate_validation_loss():
     validation_time.append(time_dif)
     # Print the time-usage.
     print("Time usage in validation data: " + str(timedelta(seconds=int(round(time_dif)))))
-    return avg_cost            
+    return avg_cost, avg_cost_mse
 
 # Best validation accuracy seen so far.
 best_validation_loss = 1000000.0
@@ -400,6 +430,8 @@ require_improvement = 1000
 # Counter for total number of iterations performed so far.
 total_iterations = 0
 
+
+
 def optimize(epoch):
     # Ensure we update the global variables rather than local copies.
     global total_iterations
@@ -407,12 +439,15 @@ def optimize(epoch):
     global last_improvement
     global epoch_list
     global train_loss
+    global train_loss_mse
     global mini_batch_train_loss
+    global mini_batch_train_loss_mse
     global validation_loss
+    global validation_loss_mse
     global train_time
     
     total_batch = int(train_X1.shape[0] / batch_size)
-    display_freq = 100
+    #display_freq = 100
     # Start-time used for printing time-usage below.
     start_time = time.time()
 
@@ -420,6 +455,7 @@ def optimize(epoch):
         mini_batch_start_time = time.time()
         
         avg_cost = 0
+        avg_cost_mse = 0
         print('Training epoch: {}'.format(i + 1))
         
         total_iterations += 1
@@ -442,28 +478,36 @@ def optimize(epoch):
             # Run the optimizer using this batch of training data.
             # TensorFlow assigns the variables in feed_dict_train
             # to the placeholder variables and then runs the optimizer.
-            _, c = sess.run([optimizer, l2_loss], feed_dict=feed_dict_train)
+            _, c, c_mse = sess.run([optimizer, l2_loss, mse], feed_dict=feed_dict_train)
             
             #save mini-batch loss c to list
             mini_batch_train_loss.append(c)
+            mini_batch_train_loss_mse.append(c_mse)
             
             # Compute average loss
             avg_cost += c / total_batch
+            avg_cost_mse += c_mse / total_batch
             #print(avg_cost)
             
-            if iteration % display_freq == 0:
-                print("Epoch {0:4d}\t step {1:5d}:\t Mini-Batch Loss={2:.6f}".format(i, iteration, c))
+            #if iteration % display_freq == 0:
+            #    print("Epoch {0:4d}\t step {1:5d}:\t Mini-Batch Loss={2:.6f} \t Mini-Batch MSE Loss={3:.6f}".format(i, iteration, c, c_mse))
+                
+            
         
         epoch_end_time = time.time() 
         epoch_time_dif = epoch_end_time - mini_batch_start_time
         train_time.append(epoch_time_dif)
+        print("Time usage in train data: " + str(timedelta(seconds=int(round(epoch_time_dif)))))
+        
         train_loss.append(avg_cost)
+        train_loss_mse.append(avg_cost_mse)
         # Print status every 100 iterations and after last iteration.
         #if (total_iterations % 100 == 0) or (i == (epoch - 1)):
 
         # Calculate the loss on the validation-set
-        loss_validation = calculate_validation_loss();
+        loss_validation, loss_mse_validation = calculate_validation_loss();
         validation_loss.append(loss_validation)
+        validation_loss_mse.append(loss_mse_validation)
         
         
 
@@ -487,10 +531,10 @@ def optimize(epoch):
             improved_str = ''
                 
         # Status-message for printing.
-        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Validation Loss: {2:.6f} {3}"
+        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Validation Loss L2: {2:.6f}, Validation Loss MSE: {3:.6f} {4}"
         
         # Print it.
-        print(msg.format(i + 1, avg_cost, loss_validation, improved_str))
+        print(msg.format(i + 1, avg_cost, loss_validation, loss_mse_validation, improved_str))
         
         epoch_list.append(i)   
         # If no improvement found in the required number of iterations.
@@ -512,7 +556,7 @@ def optimize(epoch):
 
 
 
-def plot_train_loss(train, validation): 
+def plot_train_loss(train, validation, name): 
     
     # list all data in history
     #print(history.history.keys())
@@ -529,10 +573,11 @@ def plot_train_loss(train, validation):
     
     if not os.path.exists('graph'):
         os.makedirs('graph')
-    fig1.savefig('graph/train_validation_loss.png', dpi=2000)
+    filename = name+'.png'
+    fig1.savefig('graph/' + filename, dpi=2000)
 
-def save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, validation_time, name):
-    data = zip(epoch_list, train_loss, validation_loss, train_time, validation_time)
+def save_loss_as_csv(epoch_list, train_loss, train_loss_mse, validation_loss, validation_loss_mse, train_time, validation_time, name):
+    data = zip(epoch_list, train_loss, train_loss_mse, validation_loss, validation_loss_mse, train_time, validation_time)
     file_name = str(name)+'.csv'
     save_dir = 'csv'
     if not os.path.exists(save_dir):
@@ -541,42 +586,51 @@ def save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, valida
     
     with open(save_path, 'a') as csvFile:
         writer = csv.writer(csvFile)
-        writer.writerow(['epoch_list', 'train_loss', 'validation_loss', 'train_time', 'validation_time'])
+        writer.writerow(['epoch_list', 'train_loss', 'train_loss_mse', 'validation_loss', 'validation_loss_mse','train_time', 'validation_time'])
         writer.writerows(data)
     
     csvFile.close()
     
-def save_mini_batch_train_loss_as_csv(mini_batch_train_loss, name):
-    data = zip(mini_batch_train_loss)
+def save_mini_batch_loss_as_csv(mini_batch_train_loss, mini_batch_train_loss_mse, name):
+    data = zip(mini_batch_train_loss, mini_batch_train_loss_mse)
     file_name = str(name)+'.csv'
     save_dir = 'csv'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, file_name)
+    header_1 = str(name)
+    header_2 = str(name) + '_mse'
     
     with open(save_path, 'a') as csvFile:
         writer = csv.writer(csvFile)
-        writer.writerow(['mini_batch_train_loss'])
+        writer.writerow([header_1, header_2])
         writer.writerows(data)
     
     csvFile.close()
     
 
 
-def save_test_loss_as_csv(test_loss):
-    data = [[test_loss]]
-    with open("csv/test_loss.txt", "a") as csvFile:
+def save_test_loss_as_csv(test_loss, test_loss_mse):
+    data = [[test_loss, test_loss_mse]]
+    with open("csv/test_loss.csv", "a") as csvFile:
         writer = csv.writer(csvFile)
-        writer.writerow(['test loss'])
+        writer.writerow(['test_loss', 'test_loss_mse'])
         writer.writerows(data)
     csvFile.close() 
 
-epoch = 3
+epoch = 2
 optimize(epoch)
 
-plot_train_loss(train_loss, validation_loss)
-save_loss_as_csv(epoch_list, train_loss, validation_loss, train_time, validation_time, 'training_data')
-save_mini_batch_train_loss_as_csv(mini_batch_train_loss, 'mini_batch_train_loss')
+plot_train_loss(train_loss, validation_loss, 'l2')
+plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
+#plot_train_loss(mini_batch_train_loss, mini_batch_validation_loss, 'minibatch_l2')
+#plot_train_loss(mini_batch_train_loss_mse, mini_batch_validation_loss_mse, 'minibatch_mse')
+
+save_loss_as_csv(epoch_list, train_loss, train_loss_mse, validation_loss, validation_loss_mse, train_time, validation_time, 'training_data')
+save_mini_batch_loss_as_csv(mini_batch_train_loss, mini_batch_train_loss_mse, 'mini_batch_train_loss')
+save_mini_batch_loss_as_csv(mini_batch_validation_loss, mini_batch_validation_loss_mse, 'mini_batch_validation_loss')
+save_mini_batch_loss_as_csv(mini_batch_test_loss, mini_batch_test_loss_mse, 'mini_batch_test_loss')
+
 # Running a new session
 print("Starting 2nd session...")
 
@@ -585,9 +639,9 @@ saver.restore(sess=sess, save_path=save_path)
 print("Model restored from file: %s" % save_path)
 
 
-test_loss = calculate_test_loss()
-save_test_loss_as_csv(test_loss)
-print("Test loss: {:.6f}".format(test_loss))
+test_loss, test_loss_mse = calculate_test_loss()
+save_test_loss_as_csv(test_loss, test_loss_mse)
+print("Test loss: {:.6f}\t Test loss MSE: {:.6f}".format(test_loss, test_loss_mse))
    
 
 # This has been commented out in case you want to modify and experiment
@@ -595,113 +649,4 @@ print("Test loss: {:.6f}".format(test_loss))
 # session.close()
 
 
-'''
-#1000000
-for i in range(100000):
-    X, x2, Y = next(data_iter)
-    #X = X[:,:,:,1].reshape([batch_size,200,200,1])
-    
-    #print X.shape, Y.shape
-    #print X[:, :,:,1].reshape(batch_size, 200, 200, 1).shape
-    
-    
-    
-    if i%100 == 0:
-        train_accuracy = accuracy.eval( feed_dict={
-        input_X:X, input_x2:x2, input_Y:Y, keep_prob: 1.0})
-        #input_X:X, input_Y:X, keep_prob: 1.0})
-        print ("\nIter", i, "training accuray", train_accuracy)
-        
-        with open("output/accuracy.txt", "a") as myfile:
-            myfile.write('Iter ' + str(i) + ', Accuracy: ' + str(train_accuracy))
 
-        #new_img = h_conv8.eval(feed_dict={input_X: X, input_x2: x2, keep_prob: 1.0})
-
-        test_img = h_conv10.eval(feed_dict={input_X: test_X1[0:batch_size], input_x2: test_x2[0:batch_size].reshape([-1,1]), keep_prob: 1.0})
-       
-        idx_img2 = 101 # cool for walking
-        #idx_img2 = 14000 # for handwaving
-        #idx_img2 = 3450 # for handclapping
-        #idx_img2 = 14000 # for boxing
-        #idx_img2 = 1000 # for jogging
-        #idx_img2 = 300 # for running
-        #idx_img2 = 8020 # handwaving white actor
-
-        test_img2 = h_conv10.eval(feed_dict={input_X: test_X1[idx_img2:idx_img2+batch_size], input_x2: test_x2[idx_img2:idx_img2+batch_size].reshape([-1,1]), keep_prob: 1.0})
-
-
-        line = np.zeros([1, 240, 1])
-        # generate test images
-
-        # 1st test image
-        row1 = np.concatenate((NN_to_CV(test_X1[0]), line, NN_to_CV(test_Y[0]), line, NN_to_CV(test_img[0]), line, NN_to_CV(test_img[0]-test_Y[0])), axis=0)
-        row2 = np.concatenate((NN_to_CV(test_X1[1]), line, NN_to_CV(test_Y[1]), line, NN_to_CV(test_img[1]), line, NN_to_CV(test_img[1]-test_Y[1])), axis=0)
-        row3 = np.concatenate((NN_to_CV(test_X1[2]), line, NN_to_CV(test_Y[2]), line, NN_to_CV(test_img[2]), line, NN_to_CV(test_img[2]-test_Y[2])), axis=0)
-        row4 = np.concatenate((NN_to_CV(test_X1[3]), line, NN_to_CV(test_Y[3]), line, NN_to_CV(test_img[3]), line, NN_to_CV(test_img[3]-test_Y[3])), axis=0)
-        row5 = np.concatenate((NN_to_CV(test_X1[4]), line, NN_to_CV(test_Y[4]), line, NN_to_CV(test_img[4]), line, NN_to_CV(test_img[4]-test_Y[4])), axis=0)
-
-        
-        
-
-        
-        all_imgs = np.concatenate((row1, row2, row3, row4, row5), axis=1)
-        #cv2.imwrite('output/out_img.{i:02d}-{idx_img2:02d}.png', all_imgs)
-        path = 'output'
-        if not os.path.exists(path):
-            os.makedirs(path)
-        
-        path = 'output/output1/'
-        if not os.path.exists(path):
-            os.makedirs(path)
-        cv2.imwrite(os.path.join(path , 'out_img.%05d.png' % (i)), all_imgs)
-        
-
-        # 2nd test image
-        row1 = np.concatenate((NN_to_CV(test_X1[idx_img2+0]), line, NN_to_CV(test_Y[idx_img2+0]), line, NN_to_CV(test_img2[0]), line, NN_to_CV(test_img2[0]-test_Y[idx_img2+0])), axis=0)
-        row2 = np.concatenate((NN_to_CV(test_X1[idx_img2+1]), line, NN_to_CV(test_Y[idx_img2+1]), line, NN_to_CV(test_img2[1]), line, NN_to_CV(test_img2[1]-test_Y[idx_img2+1])), axis=0)
-        row3 = np.concatenate((NN_to_CV(test_X1[idx_img2+2]), line, NN_to_CV(test_Y[idx_img2+2]), line, NN_to_CV(test_img2[2]), line, NN_to_CV(test_img2[2]-test_Y[idx_img2+2])), axis=0)
-        row4 = np.concatenate((NN_to_CV(test_X1[idx_img2+3]), line, NN_to_CV(test_Y[idx_img2+3]), line, NN_to_CV(test_img2[3]), line, NN_to_CV(test_img2[3]-test_Y[idx_img2+3])), axis=0)
-        row5 = np.concatenate((NN_to_CV(test_X1[idx_img2+4]), line, NN_to_CV(test_Y[idx_img2+4]), line, NN_to_CV(test_img2[4]), line, NN_to_CV(test_img2[4]-test_Y[idx_img2+4])), axis=0)
-
-        
-
-
-
-
-        all_imgs = np.concatenate((row1, row2, row3, row4, row5), axis=1)
-        path = 'output/output2/'
-        
-        if not os.path.exists(path):
-            os.makedirs(path)
-        cv2.imwrite(os.path.join(path , 'out_img2.%05d.png' % (i)), all_imgs)
-        #cv2.imwrite('output/out_img.png', all_imgs)
-    
-    #print (".",)
-    #print X.shape,
-    start_time = time.time()
-    train_step.run(feed_dict={input_X:X, input_x2:x2, input_Y:Y, keep_prob: 0.8})
-    #train_step.run(feed_dict={input_X:X, input_Y:X, keep_prob: 0.8})
-    
-    #count individual epoch time
-    elapsed_time = time.time() - start_time
-    data = [[i , elapsed_time]]
-    with open('epoch_time.csv', 'a') as csvFile:
-        writer = csv.writer(csvFile)
-        writer.writerows(data)
-        
-        
-        
-    #count total epoch  time      
-    total_elapsed_time = time.time() - train_start_time
-    epoch_data = [[i , total_elapsed_time]]
-    with open('total_epoch_time.csv', 'a') as epochFile:
-        writer = csv.writer(epochFile)
-        writer.writerows(epoch_data)
-
-csvFile.close()
-epochFile.close()
-f=open("total_train_time.txt", "a+")
-train_elapsed_time = time.time() - train_start_time
-f.write(time.strftime("%H:%M:%S", time.gmtime(train_elapsed_time)))
-f.close()
-'''

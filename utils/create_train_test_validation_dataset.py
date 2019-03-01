@@ -4,25 +4,73 @@ import random
 import re
 import glob
 import numpy as np
+import argparse
+
+
+def is_dir(dirname):
+    """Checks if a path is an actual directory"""
+    if not os.path.isdir(dirname):
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        #msg = "{0} is not a directory".format(dirname)
+        #raise argparse.ArgumentTypeError(msg)
+    else:
+        
+        return os.path.abspath(os.path.realpath(os.path.expanduser(dirname)))
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('source', type=is_dir)
+parser.add_argument('test_dest', type=is_dir)
+parser.add_argument('valid_dest', type=is_dir)
+args = parser.parse_args()
+
+
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
     parts = numbers.split(value)
     parts[1::2] = map(int, parts[1::2])
     return parts
 
-train_parent_directory = sorted(glob.glob('train/*/'), key=numericalSort)
+#train_parent_directory = sorted(glob.glob('train/*/'), key=numericalSort)
 
-
-source = os.listdir("sample/")
-destination = "sample_test/"
+src_dir = args.source
+#source = os.listdir(src_dir)
+test_destination = args.test_dest
+validation_destination = args.valid_dest
 #shuf = np.random.permutation(source)
 
 num_folds = 5
 
-a = range(int(round(len(source)/num_folds)))
-b = int(round(len(source)/num_folds))
-index = random.sample(source, b)
+#a = range(int(round(len(source)/num_folds)))
+#b = int(round(len(source)/num_folds))
+#index = random.sample(source, b)
 
+
+def create_test_dataset(src_dir):
+    source = os.listdir(src_dir)
+    b = int(round(len(source)/num_folds))
+    index = random.sample(source, b)
+    for dir in index:
+        folder_name = dir 
+        src_path = os.path.join(src_dir, folder_name)
+        dest_path = os.path.join(test_destination, folder_name)
+        shutil.copytree(src_path, dest_path)
+        shutil.rmtree(src_path, onerror=remove_readonly)
+        
+        
+def create_validation_dataset(src_dir):
+    source = os.listdir(src_dir)
+    b = int(round(len(source)/num_folds))
+    index = random.sample(source, b)
+    for dir in index:
+        folder_name = dir 
+        src_path = os.path.join(src_dir, folder_name)
+        dest_path = os.path.join(validation_destination, folder_name)
+        shutil.copytree(src_path, dest_path)
+        shutil.rmtree(src_path, onerror=remove_readonly)
+
+        
 '''
 for dir in range(int(round(len(shuf)/num_folds))):
     result = []
@@ -38,10 +86,10 @@ def remove_readonly(func, path, _):
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
-for dir in index:
-    from_dir = 'sample/'
-    folder_name = dir 
-    from_path = os.path.join(from_dir, folder_name)
-    dest_path = os.path.join(destination, folder_name)
-    shutil.copytree(from_path, dest_path)
-    shutil.rmtree(from_path, onerror=remove_readonly)
+create_test_dataset(src_dir)
+
+#update the source with the updated folder list
+#source = os.listdir(src_dir)
+#b = int(round(len(source)/num_folds))
+#index = random.sample(source, b)
+create_validation_dataset(src_dir)

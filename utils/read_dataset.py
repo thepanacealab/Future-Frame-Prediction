@@ -26,9 +26,9 @@ train_X2 = []
 test_X2 = []
 validation_X2 = []
 
-train_parent_directory = sorted(glob.glob('../../../data/train/*/'), key=numericalSort)
-test_parent_directory = sorted(glob.glob('../../../data/test/*/'), key=numericalSort)
-validation_parent_directory = sorted(glob.glob('../../../data/validation/*/'), key=numericalSort)
+train_parent_directory = sorted(glob.glob('../data/train/*/'), key=numericalSort)
+test_parent_directory = sorted(glob.glob('../data/test/*/'), key=numericalSort)
+validation_parent_directory = sorted(glob.glob('../data/validation/*/'), key=numericalSort)
 
 #TRAIN DATASET
 for i in train_parent_directory:
@@ -41,7 +41,7 @@ for i in train_parent_directory:
         train_y_img_path_list.extend(train_y_img_path)
         
         #calculate time from image file
-        f=open("../../../data/train_X2.txt", "a")
+        f=open("../data/train_X2.txt", "a")
         for k, img in enumerate(train_x1_img_path):
             first_match = re.search(r'\d{4}_\d{2}_\d{2}__\d{2}_\d{2}_\d{2}_\d{2}', train_x1_img_path[k])
             first_utc_time = datetime.strptime(first_match.group(), "%Y_%m_%d__%H_%M_%S_%f")
@@ -53,7 +53,7 @@ for i in train_parent_directory:
             train_X2.append(int_time)
             f.write(str(int_time) + '\n')
             data = [[k, int_time, first_utc_time, second_utc_time,train_x1_img_path[k], train_y_img_path[k]]]
-            with open('../../../data/train_X2.csv', 'a') as csvFile:
+            with open('../data/train_X2.csv', 'a') as csvFile:
                 writer = csv.writer(csvFile)
                 writer.writerow(['serial', 'time_in_second', 'first_image_time', 'second_image_time', 'first_image_path', 'second_image_path'])
                 writer.writerows(data)
@@ -71,7 +71,7 @@ for i in test_parent_directory:
         test_y_img_path_list.extend(test_y_img_path)
         
         #calculate time from image file
-        f=open("../../../data/test_X2.txt", "a")
+        f=open("../data/test_X2.txt", "a")
         for k, img in enumerate(test_x1_img_path):
             first_match = re.search(r'\d{4}_\d{2}_\d{2}__\d{2}_\d{2}_\d{2}_\d{2}', test_x1_img_path[k])
             first_utc_time = datetime.strptime(first_match.group(), "%Y_%m_%d__%H_%M_%S_%f")
@@ -83,7 +83,7 @@ for i in test_parent_directory:
             test_X2.append(int_time)
             f.write(str(int_time) + '\n')
             data = [[k, int_time, first_utc_time, second_utc_time,test_x1_img_path[k], test_y_img_path[k]]]
-            with open('../../../data/test_X2.csv', 'a') as csvFile:
+            with open('../data/test_X2.csv', 'a') as csvFile:
                 writer = csv.writer(csvFile)
                 writer.writerow(['serial', 'time_in_second', 'first_image_time', 'second_image_time', 'first_image_path', 'second_image_path'])
                 writer.writerows(data)
@@ -101,7 +101,7 @@ for i in validation_parent_directory:
         validation_y_img_path_list.extend(validation_y_img_path)
         
         #calculate time from image file
-        f=open("../../../data/validation_X2.txt", "a")
+        f=open("../data/validation_X2.txt", "a")
         for k, img in enumerate(validation_x1_img_path):
             first_match = re.search(r'\d{4}_\d{2}_\d{2}__\d{2}_\d{2}_\d{2}_\d{2}', validation_x1_img_path[k])
             first_utc_time = datetime.strptime(first_match.group(), "%Y_%m_%d__%H_%M_%S_%f")
@@ -113,7 +113,7 @@ for i in validation_parent_directory:
             validation_X2.append(int_time)
             f.write(str(int_time) + '\n')
             data = [[k, int_time, first_utc_time, second_utc_time, validation_x1_img_path[k], validation_y_img_path[k]]]
-            with open('../../../data/validation_X2.csv', 'a') as csvFile:
+            with open('../data/validation_X2.csv', 'a') as csvFile:
                 writer = csv.writer(csvFile)
                 writer.writerow(['serial', 'time_in_second', 'first_image_time', 'second_image_time', 'first_image_path', 'second_image_path'])
                 writer.writerows(data)
@@ -142,7 +142,7 @@ validation_Y_shape = (len(test_Y), 240, 240, 1)
 
 
 
-hdf5_path = '../../../data/dataset.hdf5'
+hdf5_path = '../data/dataset.hdf5'
 hdf5_file = h5py.File(hdf5_path, mode='w')
 
 #hdf5_file.create_dataset("train_X1", train_X1_shape, dtype="f", compression="gzip", compression_opts=4)

@@ -4,7 +4,7 @@ model/GAN/
 model/autoencoder/v1/
 model/autoencoder/vae/
 model/autoencoder/l2_ch/checkpoints/
-model/autoencoder/l2_ch/csv
+model/autoencoder/l2_ch/csv/
 model/autoencoder/l2_ch/graph/
-model/playground
+model/playground/
 model/autoencoder/l2_ch/test.py

@@ -12,9 +12,10 @@ import pandas as pd
 import datetime
 from pgmagick import Image
 import cv2
-import os
+import os, stat
 import numpy as np
 from PIL import Image as PILImage
+import shutil
 
 def hek():
     startYear = ''
@@ -381,11 +382,18 @@ def helioviewer():
                 # cv2.imwrite(directoryJpgPoly+resImageUriData + ".jpeg",im2)
                 start = start + datetime.timedelta(seconds=36)
                 print(start)
+            
+            #delete the folder where all the convertered png images are stored to save space
+            shutil.rmtree(directoryJpgTrackID, onerror=remove_readonly)
 
 
     except Exception as e:
         print('Error:', str(e))
-
+        
+def remove_readonly(func, path, _):
+    "Clear the readonly bit and reattempt the removal"
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 def main():
     helioviewer()

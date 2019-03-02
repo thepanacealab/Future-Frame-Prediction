@@ -79,6 +79,10 @@ def conv2d(x, W):
 def pool_2x2(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 2, 2, 1], padding='SAME')
 
+def huber_loss(x, y):
+    return tf.losses.huber_loss(x, y)
+
+
 
 #data_iter = data_iterator()
 
@@ -256,7 +260,9 @@ h_pool8 = tf.nn.relu(tf.nn.conv2d_transpose(h_conv9, W_pool8, output_shape = dec
 h_conv10 = tf.nn.relu(tf.nn.conv2d_transpose(h_pool8, W_conv10, output_shape = deconv_shape_conv10, strides=[1,1,1,1], padding='SAME') + b_conv10)
 
 beta = 0.00001
-error = tf.nn.l2_loss(input_Y - h_conv10) 
+error = huber_loss(input_Y, h_conv10)
+
+
 #+ beta*tf.nn.l2_loss(W_conv1) + beta*tf.nn.l2_loss(b_conv1) 
 #+ beta*tf.nn.l2_loss(W_pool1) + beta*tf.nn.l2_loss(b_pool1) 
 #+ beta*tf.nn.l2_loss(W_conv2) + beta*tf.nn.l2_loss(b_conv2) 
@@ -272,7 +278,8 @@ error = tf.nn.l2_loss(input_Y - h_conv10)
 
 optimizer = tf.train.AdamOptimizer(0.001).minimize(error)
 
-l2_loss = tf.nn.l2_loss(input_Y - h_conv10)
+#l2_loss = tf.nn.l2_loss(input_Y - h_conv10)
+huber_loss = huber_loss(input_Y, h_conv10)
 
 mse = tf.losses.mean_squared_error(input_Y, h_conv10)
 
@@ -361,7 +368,7 @@ def calculate_test_loss():
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
-        c, c_mse = sess.run([l2_loss, mse], feed_dict=feed_dict_test)
+        c, c_mse = sess.run([huber_loss, mse], feed_dict=feed_dict_test)
             
         
         mini_batch_test_loss.append(c)
@@ -406,7 +413,7 @@ def calculate_validation_loss():
         # Run the optimizer using this batch of training data.
         # TensorFlow assigns the variables in feed_dict_train
         # to the placeholder variables and then runs the optimizer.
-        c, c_mse = sess.run([l2_loss, mse], feed_dict=feed_dict_validation)
+        c, c_mse = sess.run([huber_loss, mse], feed_dict=feed_dict_validation)
         
         mini_batch_validation_loss.append(c)
         mini_batch_validation_loss_mse.append(c_mse)
@@ -485,7 +492,7 @@ def optimize(epoch):
             # Run the optimizer using this batch of training data.
             # TensorFlow assigns the variables in feed_dict_train
             # to the placeholder variables and then runs the optimizer.
-            _, c, c_mse = sess.run([optimizer, l2_loss, mse], feed_dict=feed_dict_train)
+            _, c, c_mse = sess.run([optimizer, huber_loss, mse], feed_dict=feed_dict_train)
             
             #save mini-batch loss c to list
             mini_batch_train_loss.append(c)
@@ -538,10 +545,10 @@ def optimize(epoch):
             improved_str = ''
                 
         # Status-message for printing.
-        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Validation Loss L2: {2:.6f}, Validation Loss MSE: {3:.6f} {4}"
+        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Train Loss MSE: {2:.6f}, Validation Loss: {3:.6f}, Validation Loss MSE: {4:.6f} {5}"
         
         # Print it.
-        print(msg.format(i + 1, avg_cost, loss_validation, loss_mse_validation, improved_str))
+        print(msg.format(i + 1, avg_cost, avg_cost_mse, loss_validation, loss_mse_validation, improved_str))
         
         epoch_list.append(i)   
         # If no improvement found in the required number of iterations.
@@ -628,7 +635,7 @@ def save_test_loss_as_csv(test_loss, test_loss_mse):
 epoch = 2
 optimize(epoch)
 
-plot_train_loss(train_loss, validation_loss, 'l2')
+plot_train_loss(train_loss, validation_loss, 'huber')
 plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
 #plot_train_loss(mini_batch_train_loss, mini_batch_validation_loss, 'minibatch_l2')
 #plot_train_loss(mini_batch_train_loss_mse, mini_batch_validation_loss_mse, 'minibatch_mse')

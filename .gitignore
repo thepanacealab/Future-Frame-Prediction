@@ -3,8 +3,14 @@ train/
 model/GAN/
 model/autoencoder/v1/
 model/autoencoder/vae/
-model/autoencoder/l2_ch/checkpoints/
 model/autoencoder/l2_ch/csv/
+model/autoencoder/l2_ch/checkpoints/
 model/autoencoder/l2_ch/graph/
 model/playground/
 model/autoencoder/l2_ch/test.py
+model/autoencoder/vae_ch/checkpoints/
+model/autoencoder/vae_ch/csv
+model/autoencoder/vae_ch/graph
+model/autoencoder/vae_ch/experiment.py
+*.csv
+model/autoencoder/l2_ch/csv/mini_batch_train_loss.csv

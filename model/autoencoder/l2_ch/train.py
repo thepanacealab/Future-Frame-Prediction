@@ -7,7 +7,10 @@ import tensorflow as tf
 import time
 import csv
 from datetime import timedelta
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 
 #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
 #sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options))
@@ -276,7 +279,7 @@ l2_loss = tf.nn.l2_loss(input_Y - h_conv10)
 
 mse = tf.losses.mean_squared_error(input_Y, h_conv10)
 
-font = cv2.FONT_HERSHEY_SIMPLEX
+#font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 
@@ -537,12 +540,12 @@ def optimize(epoch):
             # Shows that no improvement was found.
             improved_str = ''
                 
-        # Status-message for printing.
-        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Validation Loss L2: {2:.6f}, Validation Loss MSE: {3:.6f} {4}"
+                # Status-message for printing.
+        msg = "Iter: {0:>6}, Train Loss: {1:.6f}, Train Loss MSE: {2:.6f}, Validation Loss: {3:.6f}, Validation Loss MSE: {4:.6f} {5}"
         
         # Print it.
-        print(msg.format(i + 1, avg_cost, loss_validation, loss_mse_validation, improved_str))
-        
+        print(msg.format(i + 1, avg_cost, avg_cost_mse, loss_validation, loss_mse_validation, improved_str))
+
         epoch_list.append(i)   
         # If no improvement found in the required number of iterations.
         #if total_iterations - last_improvement > require_improvement:
@@ -576,7 +579,7 @@ def plot_train_loss(train, validation, name):
     plt.xlabel('Generation')           
     plt.legend(loc='upper right')
     fig1 = plt.gcf()
-    plt.show()
+    #plt.show()
     
     if not os.path.exists('graph'):
         os.makedirs('graph')
@@ -628,15 +631,17 @@ def save_test_loss_as_csv(test_loss, test_loss_mse):
 epoch = 2
 optimize(epoch)
 
-plot_train_loss(train_loss, validation_loss, 'l2')
-plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
-#plot_train_loss(mini_batch_train_loss, mini_batch_validation_loss, 'minibatch_l2')
-#plot_train_loss(mini_batch_train_loss_mse, mini_batch_validation_loss_mse, 'minibatch_mse')
 
 save_loss_as_csv(epoch_list, train_loss, train_loss_mse, validation_loss, validation_loss_mse, train_time, validation_time, 'training_data')
 save_mini_batch_loss_as_csv(mini_batch_train_loss, mini_batch_train_loss_mse, 'mini_batch_train_loss')
 save_mini_batch_loss_as_csv(mini_batch_validation_loss, mini_batch_validation_loss_mse, 'mini_batch_validation_loss')
 save_mini_batch_loss_as_csv(mini_batch_test_loss, mini_batch_test_loss_mse, 'mini_batch_test_loss')
+
+
+plot_train_loss(train_loss, validation_loss, 'l2')
+plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
+#plot_train_loss(mini_batch_train_loss, mini_batch_validation_loss, 'minibatch_l2')
+#plot_train_loss(mini_batch_train_loss_mse, mini_batch_validation_loss_mse, 'minibatch_mse')
 
 # Running a new session
 print("Starting 2nd session...")

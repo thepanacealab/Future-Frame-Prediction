@@ -7,7 +7,10 @@ import tensorflow as tf
 import time
 import csv
 from datetime import timedelta
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 
 #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
 #sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options))
@@ -583,7 +586,7 @@ def plot_train_loss(train, validation, name):
     plt.xlabel('Generation')           
     plt.legend(loc='upper right')
     fig1 = plt.gcf()
-    plt.show()
+    #plt.show()
     
     if not os.path.exists('graph'):
         os.makedirs('graph')
@@ -635,8 +638,7 @@ def save_test_loss_as_csv(test_loss, test_loss_mse):
 epoch = 2
 optimize(epoch)
 
-plot_train_loss(train_loss, validation_loss, 'huber')
-plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
+
 #plot_train_loss(mini_batch_train_loss, mini_batch_validation_loss, 'minibatch_l2')
 #plot_train_loss(mini_batch_train_loss_mse, mini_batch_validation_loss_mse, 'minibatch_mse')
 
@@ -657,7 +659,8 @@ test_loss, test_loss_mse = calculate_test_loss()
 save_test_loss_as_csv(test_loss, test_loss_mse)
 print("Test loss: {:.6f}\t Test loss MSE: {:.6f}".format(test_loss, test_loss_mse))
    
-
+plot_train_loss(train_loss, validation_loss, 'huber')
+plot_train_loss(train_loss_mse, validation_loss_mse, 'mse')
 # This has been commented out in case you want to modify and experiment
 # with the Notebook without having to restart it.
 # session.close()
